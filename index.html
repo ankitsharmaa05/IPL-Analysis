@@ -1,0 +1,481 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>IPL Pressure Room</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: control-room app. Sticky header (brand, filters, tabs) over five views; every chart reads the same global filters. */
+:root{--bg:#090f1d;--panel:#101a2e;--panel2:#16233b;--line:#233350;--fg:#e8edf6;--mute:#8d9db6;--acc:#ffb340;--acc2:#4cc9f0;--pos:#3fd1a0;--neg:#ff6b57;--c1:#ffb340;--c2:#4cc9f0;--c3:#f472b6;--shadow:0 10px 30px #0006;
+--display:'Bricolage Grotesque','Avenir Next',system-ui,sans-serif;--body:'Inter',system-ui,sans-serif;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;color-scheme:dark}
+@media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--bg:#eef1f7;--panel:#fff;--panel2:#f2f5fa;--line:#d5dce9;--fg:#0e1a2e;--mute:#55667f;--acc:#b86a00;--acc2:#0b7ea6;--pos:#0e8a62;--neg:#c9402c;--c1:#b86a00;--c2:#0b7ea6;--c3:#c0307f;--shadow:0 8px 24px #1a2a4a22;color-scheme:light}}
+:root[data-theme="light"]{--bg:#eef1f7;--panel:#fff;--panel2:#f2f5fa;--line:#d5dce9;--fg:#0e1a2e;--mute:#55667f;--acc:#b86a00;--acc2:#0b7ea6;--pos:#0e8a62;--neg:#c9402c;--c1:#b86a00;--c2:#0b7ea6;--c3:#c0307f;--shadow:0 8px 24px #1a2a4a22;color-scheme:light}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:14.5px/1.5 var(--body);padding-block:0 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:30}
+.wrap{max-width:1180px;margin:0 auto}
+h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance}
+button,input,select{font:inherit;color:inherit}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font:600 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 0 0}
+.row1{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:space-between}
+.brand{display:flex;align-items:baseline;gap:10px}
+.brand b{font:800 24px var(--display);letter-spacing:-.02em}.brand b i{font-style:normal;color:var(--acc)}
+.brand span{color:var(--mute);font-size:12.5px}
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:4px 11px;font:600 12px var(--mono);cursor:pointer;color:var(--mute)}
+.chip[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#10141f}
+.tsel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:13px}
+.icon{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel);cursor:pointer;display:grid;place-items:center}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.tabs{display:flex;gap:2px;margin-top:10px;overflow-x:auto}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:9px 16px;font:600 14px var(--body);color:var(--mute);cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-color:var(--acc)}
+.view{display:none;padding-top:22px}.view.on{display:block}
+h2.vt{font-size:clamp(26px,4vw,40px);letter-spacing:-.02em;font-weight:800}
+.lede{color:var(--mute);max-width:70ch;margin:6px 0 18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+.grid{display:grid;gap:14px}.g2{grid-template-columns:1.25fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}.g5{grid-template-columns:repeat(5,1fr)}
+.grid>*{min-width:0}
+.card h3{font-size:18px;font-weight:700;margin-bottom:2px}.card .sub{color:var(--mute);font-size:12.5px;margin-bottom:10px}
+.kpi b{font:700 32px var(--display);display:block;line-height:1.1}.kpi span{font-size:12px;color:var(--mute)}.kpi em{font:600 11.5px var(--mono);font-style:normal}
+.seg{display:inline-flex;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:none;color:var(--mute);padding:6px 16px;border-radius:999px;font-weight:600;cursor:pointer;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--acc);color:#10141f}
+svg{display:block;width:100%;height:auto;overflow:visible}
+.badge{display:inline-block;min-width:38px;text-align:center;font:700 10.5px var(--mono);border-radius:5px;padding:2px 5px;color:#0b1020}
+/* podium */
+.pod{display:grid;gap:8px}
+.pod button{all:unset;cursor:pointer;display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid transparent}
+.pod button:hover{border-color:var(--acc)}.pod .r{font:800 22px var(--display);color:var(--acc)}.pod b{font:700 16px var(--display)}.pod small{color:var(--mute);display:block;font-size:11.5px}
+.pod .v{font:700 17px var(--mono);text-align:right}
+/* players */
+.tools{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.tools input[type=search]{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:7px 10px;min-width:190px}
+.tools label{font-size:12.5px;color:var(--mute);display:flex;gap:8px;align-items:center}
+input[type=range]{accent-color:var(--acc)}
+.tbl{display:flex;flex-direction:column;gap:6px}
+.th,.tr{display:grid;grid-template-columns:44px minmax(130px,1.2fr) minmax(200px,2fr) 70px 70px 58px 36px;gap:12px;align-items:center}
+.th{padding:0 12px;font:600 10px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+.th button{all:unset;cursor:pointer}.th button:hover{color:var(--fg)}.th button[data-on="1"]{color:var(--acc)}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.item.pin{border-color:var(--acc)}
+.tr{padding:10px 12px;cursor:pointer}.tr:hover{background:var(--panel2)}
+.rk{font:800 22px var(--display);color:var(--acc);line-height:1}
+.nm b{font:700 16px var(--display);display:block;line-height:1.15}.nm span{font:11px var(--mono);color:var(--mute)}
+.db{position:relative;height:34px}
+.db .ax{position:absolute;left:0;right:0;top:17px;height:1px;background:var(--line)}
+.db .z{position:absolute;top:5px;bottom:5px;border-left:1px dashed var(--mute);opacity:.7}
+.db .sg{position:absolute;top:15px;height:5px;border-radius:3px;opacity:.55}
+.db .dt{position:absolute;top:9px;width:15px;height:15px;border-radius:50%;margin-left:-7px}
+.db .u{background:var(--panel);border:2.5px solid var(--mute)}.db .p{background:var(--acc);border:2.5px solid var(--panel);box-shadow:0 0 0 1.5px var(--acc)}
+.db .vl{position:absolute;top:-5px;font:600 11px var(--mono);transform:translateX(-50%)}
+.num{font:600 13px var(--mono);text-align:right}
+.pinb{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:var(--panel2);cursor:pointer;font-weight:700}
+.pinb[aria-pressed="true"]{background:var(--acc);color:#10141f;border-color:var(--acc)}
+.det{display:none;padding:6px 14px 16px 68px;border-top:1px dashed var(--line);grid-template-columns:1.3fr repeat(3,1fr);gap:18px}
+.item.open .det{display:grid}
+.det h4{font:600 10px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mute);margin:12px 0 6px}
+.big{font:700 24px var(--display);line-height:1.1}.big small{font:400 11.5px var(--body);color:var(--mute);margin-left:4px}
+.spark{display:flex;gap:8px;align-items:flex-end;height:70px}
+.spark div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;font:10px var(--mono);color:var(--mute)}
+.spark i{display:block;width:100%;border-radius:3px 3px 0 0;min-height:2px}
+.more{margin:10px auto 0;display:block;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 20px;cursor:pointer;font-weight:600}
+.cmp{display:grid;gap:10px}
+.crow{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:center;font-size:12.5px}
+.crow .bars{display:grid;gap:3px}.crow .bars div{display:flex;align-items:center;gap:6px}.crow .bars i{display:block;height:9px;border-radius:5px}.crow .bars span{font:11px var(--mono);color:var(--mute)}
+.leg{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin-bottom:8px}.leg b{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.leg button{all:unset;cursor:pointer}
+/* heat */
+.heat{display:grid;gap:2px}
+.heat .c{aspect-ratio:1.5/1;border-radius:3px;min-height:14px}
+.heat .l{font:10px var(--mono);color:var(--mute);display:grid;place-items:center}
+.sq{display:grid;grid-template-columns:70px repeat(5,1fr);gap:4px}
+.sq .c{border-radius:6px;padding:8px 4px;text-align:center;font:600 12px var(--mono);cursor:default}
+.sq .l{font:11px var(--mono);color:var(--mute);display:grid;align-items:center}
+.pt{width:100%;border-collapse:collapse;font-size:13px}.pt td,.pt th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right}.pt th{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute)}.pt td:first-child,.pt th:first-child{text-align:left}
+.tt2{width:100%;border-collapse:collapse;font-size:13px}.tt2 td,.tt2 th{padding:8px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}.tt2 th{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);cursor:pointer}.tt2 th[data-on="1"]{color:var(--acc)}.tt2 td:first-child,.tt2 th:first-child{text-align:left}.tt2 tbody tr{cursor:pointer}.tt2 tbody tr:hover,.tt2 tr.sel{background:var(--panel2)}
+.scroll{overflow-x:auto}
+/* matches */
+.mlist{display:flex;flex-direction:column;gap:6px;max-height:560px;overflow:auto;padding-right:4px}
+.mc{all:unset;cursor:pointer;display:block;padding:10px 12px;border-radius:10px;background:var(--panel2);border:1px solid transparent}
+.mc:hover{border-color:var(--acc)}.mc[aria-pressed="true"]{border-color:var(--acc);background:var(--panel)}
+.mc b{font:700 15px var(--display)}.mc small{display:block;color:var(--mute);font-size:11.5px}
+.play{background:var(--acc);color:#10141f;border:0;border-radius:999px;padding:7px 16px;font-weight:700;cursor:pointer}
+.sw{display:grid;gap:6px}.sw button{all:unset;cursor:pointer;display:grid;grid-template-columns:24px 1fr auto;gap:8px;align-items:center;padding:8px 10px;background:var(--panel2);border-radius:8px;font-size:12.5px}.sw button:hover{outline:1px solid var(--acc)}
+.sw i{font:700 11px var(--mono);font-style:normal;width:22px;height:22px;border-radius:50%;background:var(--acc);color:#10141f;display:grid;place-items:center}
+.rd{display:flex;gap:18px;flex-wrap:wrap;font:12.5px var(--mono);color:var(--mute);margin-top:8px}.rd b{color:var(--fg)}
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--fg);color:var(--bg);font:12px/1.4 var(--body);padding:6px 9px;border-radius:7px;max-width:260px;display:none;box-shadow:var(--shadow)}
+.foot{margin-top:30px;color:var(--mute);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}.g4{grid-template-columns:repeat(2,1fr)}.g5{grid-template-columns:repeat(2,1fr)}
+.th{display:none}.tr{grid-template-columns:34px 1fr 60px 30px;gap:8px}.tr .db{grid-column:1/-1;order:9}.tr .hide{display:none}
+.det{padding-left:14px;grid-template-columns:1fr 1fr}.crow{grid-template-columns:70px 1fr}}
+</style>
+<div class="wrap">
+<div class="top">
+  <div class="row1">
+    <div class="brand"><b>IPL <i>Pressure</i> Room</b><span>2022–2026 · who delivers when it counts</span></div>
+    <div class="filters">
+      <div class="chips" id="fSeason" role="group" aria-label="Seasons"></div>
+      <select class="tsel" id="fTeam" aria-label="Team"></select>
+      <button class="icon" id="theme" aria-label="Toggle theme" title="Toggle theme">◐</button>
+    </div>
+  </div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+</div>
+
+<section class="view" id="v-overview">
+  <h2 class="vt">The pressure picture</h2>
+  <p class="lede">Every IPL ball since 2022 is scored for how far it can swing the match. Pick seasons or a team above and everything on this page recalculates.</p>
+  <div class="grid g5" id="kpis"></div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Pressure heartbeat</h3><div class="sub">Average swing of one ball, by over. 1.0 is an average ball. Hover to read an over.</div><svg id="pulse" viewBox="0 0 640 260"></svg><div class="rd" id="pread"></div></div>
+    <div class="card"><h3>Season by season</h3><div class="sub">Click a season in the header chips to focus it. Bars show the share of chases won.</div><div id="seaBars"></div></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Top batters now</h3><div class="sub">Live ranking for the current filters. Click to open the player.</div><div class="pod" id="podBat"></div></div>
+    <div class="card"><h3>Top bowlers now</h3><div class="sub">Live ranking for the current filters. Click to open the player.</div><div class="pod" id="podBowl"></div></div>
+  </div>
+</section>
+
+<section class="view" id="v-players">
+  <h2 class="vt">Players</h2>
+  <p class="lede">Rating = runs per 100 balls above an average IPL player in the same situation, on pressure balls, shrunk toward the player's usual level. Change the filters and ranks update live. Pin up to three players to compare.</p>
+  <div class="tools">
+    <div class="seg" id="mode"><button data-m="bat" aria-pressed="true">Batters</button><button data-m="bowl" aria-pressed="false">Bowlers</button></div>
+    <input type="search" id="q" placeholder="Search player" aria-label="Search player">
+    <label>Min pressure balls <input type="range" id="minb" min="30" max="300" step="10" value="80"><b class="mono" id="minbv">80</b></label>
+    <button class="chip" id="reset">Reset</button>
+  </div>
+  <div class="grid g2">
+    <div>
+      <div class="th"><button data-s="rank">#</button><button data-s="name">Player</button><button data-s="P" data-tip="Pressure rating, runs per 100 balls">Usual → pressure</button><button data-s="H" class="hide">Hit rate</button><button data-s="np" class="hide">Balls</button><button data-s="delta" class="hide">Δ</button><span></span></div>
+      <div class="tbl" id="tbl"></div>
+      <button class="more" id="more">Show more</button>
+    </div>
+    <div style="display:grid;gap:14px;align-content:start">
+      <div class="card"><h3>Fingerprint</h3><div class="sub">Across: usual level. Up: pressure rating. Above the line a player rises under pressure. Click a dot to pin.</div><svg id="scat" viewBox="0 0 520 400"></svg><div class="rd" id="scrd">Hover a dot.</div></div>
+      <div class="card" id="cmpcard"><h3>Compare</h3><div class="sub">Pin players with the + button.</div><div class="cmp" id="cmp"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="v-teams">
+  <h2 class="vt">Teams</h2>
+  <p class="lede">How each franchise's batters and bowlers perform on pressure balls, and how often the team wins when the chase is still alive going into over 18 (win probability between 25% and 75%).</p>
+  <div class="grid g2">
+    <div class="card"><h3>League table under pressure</h3><div class="sub">Click a column to sort, a row to open the team.</div><div class="scroll"><table class="tt2" id="ttab"></table></div></div>
+    <div class="card"><h3>Batting vs bowling</h3><div class="sub">Runs per 100 pressure balls above average. Top right is strong on both sides.</div><svg id="tscat" viewBox="0 0 440 360"></svg></div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Team × season</h3><div class="sub">Pick a measure. Hover a cell for the figure.</div><div class="seg" id="tm" style="margin-bottom:10px"><button data-t="net" aria-pressed="true">Net</button><button data-t="bat" aria-pressed="false">Batting</button><button data-t="bowl" aria-pressed="false">Bowling</button><button data-t="live" aria-pressed="false">Close-game wins</button></div><div class="sq" id="tsq"></div></div>
+    <div class="card" id="tdet"></div>
+  </div>
+</section>
+
+<section class="view" id="v-situations">
+  <h2 class="vt">Situations</h2>
+  <p class="lede">Where pressure lives. Each cell is an over and a wickets-lost count; hover for what happens there.</p>
+  <div class="card">
+    <div class="tools" style="margin-bottom:8px"><div class="seg" id="hinn"><button data-i="1" aria-pressed="false">First innings</button><button data-i="2" aria-pressed="true">Chase</button></div>
+    <div class="seg" id="hmet"><button data-k="li" aria-pressed="true">Leverage</button><button data-k="rpo" aria-pressed="false">Runs / over</button><button data-k="wk" aria-pressed="false">Wicket %</button></div></div>
+    <div class="scroll"><div style="min-width:640px"><div class="heat" id="heat"></div></div></div>
+    <div class="rd" id="hrd">Hover a cell. Columns are overs 1 to 20, rows are wickets already lost.</div>
+  </div>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card"><h3>Phase profile</h3><div class="sub">Pressure balls against ordinary balls in each phase.</div><div class="scroll"><table class="pt" id="phase"></table></div></div>
+    <div class="card"><h3>Does pressure change the game?</h3><div class="sub">Runs per over on pressure balls minus ordinary balls, by season.</div><svg id="gap" viewBox="0 0 440 240"></svg></div>
+  </div>
+  <div class="card" style="margin-top:14px"><h3>Biggest single-ball swings</h3><div class="sub">Largest change in the chasing side's win probability from one delivery.</div><div class="scroll"><table class="pt" id="swings"></table></div></div>
+</section>
+
+<section class="view" id="v-matches">
+  <h2 class="vt">Match explorer</h2>
+  <p class="lede">The 24 most pressure-packed chases. Drag across the chart or press Replay to watch the win probability move ball by ball.</p>
+  <div class="grid" style="grid-template-columns:300px 1fr">
+    <div class="card"><h3>Chases</h3><div class="sub">Ordered by total pressure faced.</div><div class="mlist" id="mlist"></div></div>
+    <div style="display:grid;gap:14px;align-content:start;min-width:0">
+      <div class="card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start"><div><h3 id="mtitle"></h3><div class="sub" id="msub"></div></div><button class="play" id="play">Replay</button></div>
+        <svg id="wp" viewBox="0 0 760 330"></svg><div class="rd" id="mrd"></div></div>
+      <div class="card"><h3>Turning points</h3><div class="sub">The four deliveries that moved the chase most. Click to jump there.</div><div class="sw" id="msw"></div></div>
+    </div>
+  </div>
+</section>
+<div class="foot">IPL 2022–2026 ball-by-ball data. Pressure = top 40% of a ball's win-probability swing within its innings (knock-outs ×1.5). Ratings are computed inside the IPL only, from the SupeRR Selector Round 1 model. Samples are small: treat ranks 7 and below as close calls.</div>
+</div>
+<div id="tip"></div>
+<script>
+fetch('data.json').then(r=>{if(!r.ok)throw new Error(r.status);return r.json()}).then(DATA=>{
+const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>[...r.querySelectorAll(s)];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const NS='http://www.w3.org/2000/svg';
+const S=(t,a={},p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e};
+const TCOL=['#f9cd1c','#2f6fd1','#e84a9a','#ff8a8a','#d0282e','#4fc3f7','#8a5ae8','#ff7a1a','#5fb0a8','#2ec4b6'];
+const TC=DATA.teams.map(t=>t.c);const fx=(v,d=1)=>(v>=0?'':'−')+Math.abs(v).toFixed(d);
+const sgn=(v,d=1)=>(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(d);
+const SEA=DATA.seasons;
+const st={view:'overview',seasons:new Set([0,1,2,3,4]),team:-1,mode:'bat',minb:80,q:'',sort:'rank',dir:1,pins:[],open:null,all:false,hinn:2,hmet:'li',tmet:'net',tsort:'net',tdir:-1,tsel:-1,match:0,idx:0,timer:null};
+const badge=t=>`<span class="badge" style="background:${TCOL[t]}">${TC[t]}</span>`;
+/* ---------- tooltip ---------- */
+const tip=$('#tip');
+document.addEventListener('pointermove',e=>{const t=e.target.closest?.('[data-tip]');if(!t){tip.style.display='none';return}tip.innerHTML=t.dataset.tip;tip.style.display='block';const w=tip.offsetWidth;tip.style.left=Math.min(innerWidth-w-8,e.clientX+14)+'px';tip.style.top=(e.clientY+16)+'px'});
+document.addEventListener('pointerleave',()=>tip.style.display='none');
+/* ---------- rating engine ---------- */
+const cache={};
+function rate(mode){
+  const key=mode+[...st.seasons].sort().join('')+st.minb; if(cache[key])return cache[key];
+  const D=DATA[mode],agg=new Map(),sea=new Map();
+  for(const r of D.rows){
+    let s=sea.get(r[0]);if(!s){s={};sea.set(r[0],s)} s[r[1]]=[r[3],r[4],r[2]];
+    if(!st.seasons.has(r[1]))continue;
+    let a=agg.get(r[0]);if(!a){a={i:r[0],np:0,sp:0,ssp:0,nn:0,sn:0,ssn:0,app:0,hit:0,pb:0,pr:0,pw:0,pd:0,ob:0,or:0,ow:0,od:0,tm:{}};agg.set(r[0],a)}
+    a.np+=r[3];a.sp+=r[4];a.ssp+=r[5];a.nn+=r[6];a.sn+=r[7];a.ssn+=r[8];a.app+=r[9];a.hit+=r[10];
+    a.pb+=r[11];a.pr+=r[12];a.pw+=r[13];a.pd+=r[14];a.ob+=r[15];a.or+=r[16];a.ow+=r[17];a.od+=r[18];a.tm[r[2]]=(a.tm[r[2]]||0)+r[3];
+  }
+  let L=[...agg.values()].filter(a=>a.np>=st.minb&&a.app>=6&&a.nn>=60);
+  const out={list:[],sea};
+  if(L.length>=8){
+    const sum=k=>L.reduce((s,a)=>s+a[k],0);
+    const sp2=sum('ssp')/sum('np')-(sum('sp')/sum('np'))**2, sn2=sum('ssn')/sum('nn')-(sum('sn')/sum('nn'))**2;
+    const mean=x=>x.reduce((s,v)=>s+v,0)/x.length, vr=x=>{const m=mean(x);return x.reduce((s,v)=>s+(v-m)**2,0)/(x.length-1)};
+    const mn=L.map(a=>a.sn/a.nn);
+    const kn=sn2/Math.max(vr(mn)-mean(L.map(a=>sn2/a.nn)),1e-4);
+    L.forEach(a=>{a.Nh=a.sn/(a.nn+kn);a.mp=a.sp/a.np});
+    const kp=sp2/Math.max(mean(L.map(a=>(a.mp-a.Nh)**2))-mean(L.map(a=>sp2/a.np)),1e-4);
+    const hr=sum('hit')/sum('app');
+    L.forEach(a=>{a.Ph=(a.sp+kp*a.Nh)/(a.np+kp);a.H=(a.hit+10*hr)/(a.app+10)});
+    const z=(k)=>{const m=mean(L.map(a=>a[k])),s=Math.sqrt(vr(L.map(a=>a[k])));return a=>(a[k]-m)/s};
+    const zp=z('Ph'),zh=z('H');
+    L.forEach(a=>{a.score=zp(a)+.5*zh(a);a.P=a.Ph*100;a.N=a.Nh*100;a.delta=a.P-a.N;a.name=D.names[a.i];
+      let b=-1,bv=-1;for(const t in a.tm)if(a.tm[t]>bv){bv=a.tm[t];b=+t}a.team=b});
+    L.sort((x,y)=>y.score-x.score);L.forEach((a,i)=>a.rank=i+1);
+    out.list=L;
+  }
+  cache[key]=out;return out;
+}
+const sKey=()=>[...st.seasons].sort().join('');
+/* ---------- header ---------- */
+function initHeader(){
+  $('#fSeason').innerHTML=SEA.map((y,i)=>`<button class="chip" data-s="${i}" aria-pressed="true">${y}</button>`).join('');
+  $('#fTeam').innerHTML='<option value="-1">All teams</option>'+DATA.teams.map((t,i)=>`<option value="${i}">${t.n}</option>`).join('');
+  const V=[['overview','Overview'],['players','Players'],['teams','Teams'],['situations','Situations'],['matches','Match explorer']];
+  $('#tabs').innerHTML=V.map(v=>`<button role="tab" data-v="${v[0]}" aria-selected="false">${v[1]}</button>`).join('');
+  $('#fSeason').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const i=+b.dataset.s;
+    if(st.seasons.size===1&&st.seasons.has(i))return;
+    if(st.seasons.size===5)st.seasons=new Set([i]);else if(st.seasons.has(i))st.seasons.delete(i);else st.seasons.add(i);
+    if(st.seasons.size===0)st.seasons=new Set([0,1,2,3,4]);renderAll()};
+  $('#fTeam').onchange=e=>{st.team=+e.target.value;renderAll()};
+  $('#tabs').onclick=e=>{const b=e.target.closest('button');if(b)go(b.dataset.v)};
+  $('#theme').onclick=()=>{const d=document.documentElement;const cur=d.dataset.theme||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');d.dataset.theme=cur==='dark'?'light':'dark';renderAll()};
+}
+function go(v){st.view=v;try{history.replaceState(null,'','#'+v)}catch(e){}
+  $$('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));$$('#tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.v===v));renderAll()}
+/* ---------- overview ---------- */
+function seasonAgg(){const a={m:0,cm:0,cw:0,lm:0,lw:0,n:0,np_:0,rp:0,ro:0,wp:0,wo:0};
+  DATA.season.forEach((s,i)=>{if(!st.seasons.has(i))return;a.m+=s.m;a.cm+=s.cm;a.cw+=s.cw;a.lm+=s.lm;a.lw+=s.lw;a.n+=s.n;a.np_+=s.np_;a.rp+=s.rp*s.np_;a.ro+=s.ro*(s.n-s.np_);a.wp+=s.wp*s.np_;a.wo+=s.wo*(s.n-s.np_)});
+  a.rp/=a.np_;a.ro/=(a.n-a.np_);a.wp/=a.np_;a.wo/=(a.n-a.np_);return a}
+function renderOverview(){
+  const a=seasonAgg();
+  const K=[[a.m,'matches in view',`${[...st.seasons].length} season${st.seasons.size>1?'s':''}`],[(a.np_/a.n*100).toFixed(0)+'%','of balls are pressure balls',''],[sgn(a.rp-a.ro,2),'runs per over, pressure vs ordinary',`${a.rp.toFixed(2)} vs ${a.ro.toFixed(2)}`],
+    [(a.cw/a.cm*100).toFixed(0)+'%','of chases won',`${a.cw} of ${a.cm}`],[a.lm?(a.lw/a.lm*100).toFixed(0)+'%':'–','chases won when live at over 18',`${a.lw} of ${a.lm}`]];
+  $('#kpis').innerHTML=K.map(k=>`<div class="card kpi"><b>${k[0]}</b><span>${k[1]}</span><br><em style="color:var(--acc)">${k[2]}</em></div>`).join('');
+  // pulse
+  const s=$('#pulse');s.innerHTML='';const W=640,H=260,L=34,R=8,T=12,B=24,mx=3.6;const X=i=>L+(W-L-R)*i/19,Y=v=>T+(H-T-B)*(1-v/mx);
+  for(const v of [0,1,2,3]){S('line',{x1:L,x2:W-R,y1:Y(v),y2:Y(v),stroke:css('--line'),'stroke-dasharray':v===1?'4 4':''},s);S('text',{x:L-6,y:Y(v)+4,'text-anchor':'end','font-size':10,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent=v.toFixed(1)}
+  for(let i=0;i<20;i+=3)S('text',{x:X(i),y:H-6,'text-anchor':'middle','font-size':10,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent=i+1;
+  const pl=(arr,c,w)=>S('path',{d:'M'+arr.map((v,i)=>X(i)+','+Y(v)).join('L'),fill:'none',stroke:c,'stroke-width':w,'stroke-linejoin':'round'},s);
+  const df=S('defs',{},s),g=S('linearGradient',{id:'pg',x1:0,y1:0,x2:0,y2:1},df);S('stop',{offset:0,'stop-color':css('--acc'),'stop-opacity':.35},g);S('stop',{offset:1,'stop-color':css('--acc'),'stop-opacity':0},g);
+  S('path',{d:'M'+DATA.lev2.map((v,i)=>X(i)+','+Y(v)).join('L')+`L${X(19)},${Y(0)}L${X(0)},${Y(0)}Z`,fill:'url(#pg)'},s);
+  pl(DATA.lev1,css('--acc2'),2.5);pl(DATA.lev2,css('--acc'),3);
+  S('text',{x:L+8,y:T+14,'font-size':11,fill:css('--acc'),'font-weight':600},s).textContent='Chase';S('text',{x:L+8,y:Y(DATA.lev1[3])-8,'font-size':11,fill:css('--acc2'),'font-weight':600},s).textContent='First innings';
+  const cur=S('line',{y1:T,y2:H-B,stroke:css('--mute'),opacity:0},s),dot1=S('circle',{r:4,fill:css('--acc2'),opacity:0},s),dot2=S('circle',{r:4,fill:css('--acc'),opacity:0},s);
+  const rd=i=>{cur.setAttribute('x1',X(i));cur.setAttribute('x2',X(i));cur.setAttribute('opacity',1);dot1.setAttribute('cx',X(i));dot1.setAttribute('cy',Y(DATA.lev1[i]));dot1.setAttribute('opacity',1);dot2.setAttribute('cx',X(i));dot2.setAttribute('cy',Y(DATA.lev2[i]));dot2.setAttribute('opacity',1);
+    $('#pread').innerHTML=`<span>Over <b>${i+1}</b></span><span>First innings <b>${DATA.lev1[i].toFixed(2)}×</b></span><span>Chase <b>${DATA.lev2[i].toFixed(2)}×</b></span>`};
+  const hit=S('rect',{x:L,y:T,width:W-L-R,height:H-T-B,fill:'transparent'},s);hit.addEventListener('pointermove',e=>{const r=s.getBoundingClientRect();rd(Math.max(0,Math.min(19,Math.round(((e.clientX-r.left)/r.width*W-L)/(W-L-R)*19))))});rd(19);
+  // season bars
+  $('#seaBars').innerHTML=DATA.season.map((x,i)=>{const p=x.cw/x.cm*100,l=x.lm?x.lw/x.lm*100:0,on=st.seasons.has(i);
+    return `<div style="display:grid;grid-template-columns:48px 1fr 52px;gap:10px;align-items:center;margin:9px 0;opacity:${on?1:.35}" data-tip="${SEA[i]}: ${x.cw} of ${x.cm} chases won · ${x.lw} of ${x.lm} close chases (live at over 18) won"><span class="mono">${SEA[i]}</span>
+      <div style="position:relative;height:16px;background:var(--panel2);border-radius:8px"><i style="position:absolute;left:0;top:0;bottom:0;width:${p}%;background:var(--acc2);border-radius:8px;opacity:.85"></i><i style="position:absolute;left:${l}%;top:-3px;bottom:-3px;border-left:3px solid var(--acc)"></i></div><span class="mono" style="text-align:right">${p.toFixed(0)}%</span></div>`}).join('')+`<div class="rd"><span><b style="color:var(--acc2)">▮</b> chases won</span><span><b style="color:var(--acc)">|</b> win % when live at over 18</span></div>`;
+  for(const [m,id] of [['bat','#podBat'],['bowl','#podBowl']]){
+    const R=rate(m).list.filter(a=>st.team<0||a.team===st.team).slice(0,3);
+    $(id).innerHTML=R.length?R.map(a=>`<button data-open="${m}:${a.i}"><span class="r">${a.rank}</span><span><b>${a.name}</b><small>${badge(a.team)} ${a.np|0} pressure balls</small></span><span class="v" style="color:${a.P>=0?'var(--pos)':'var(--neg)'}">${sgn(a.P)}</span></button>`).join(''):'<div class="sub">No eligible players for this filter. Lower the minimum balls in Players.</div>';
+  }
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-open]');if(!b)return;const [m,i]=b.dataset.open.split(':');st.mode=m;st.open=+i;st.q='';$('#q').value='';go('players');
+  setTimeout(()=>{$('.item.open')?.scrollIntoView({block:'center',behavior:'smooth'})},60)});
+/* ---------- players ---------- */
+const PCOL=()=>[css('--c1'),css('--c2'),css('--c3')];
+function visible(){
+  let L=rate(st.mode).list.slice();
+  if(st.team>=0)L=L.filter(a=>a.team===st.team);
+  if(st.q)L=L.filter(a=>a.name.toLowerCase().includes(st.q.toLowerCase()));
+  const k=st.sort;L.sort((a,b)=>{const x=k==='name'?a.name.localeCompare(b.name):a[k],y=k==='name'?b.name.localeCompare(a.name):b[k];return k==='name'?(st.dir>0?x:-x):(st.dir<0?y-x:x-y)});
+  return L}
+function renderPlayers(){
+  const bat=st.mode==='bat',R=rate(st.mode),all=R.list,L=visible(),show=st.all?L:L.slice(0,20),pc=PCOL();
+  $$('#mode button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===st.mode));
+  $$('.th [data-s]').forEach(b=>b.dataset.on=b.dataset.s===st.sort?1:0);
+  if(!all.length){$('#tbl').innerHTML='<div class="card sub">Not enough eligible players for these filters. Add seasons or lower the minimum pressure balls.</div>';$('#more').hidden=true;$('#scat').innerHTML='';$('#cmp').innerHTML='';return}
+  const vals=show.flatMap(a=>[a.P,a.N]).concat([0]),lo=Math.min(...vals)-3,hi=Math.max(...vals)+3,pos=v=>(v-lo)/(hi-lo)*100;
+  $('#tbl').innerHTML=show.map(a=>{
+    const p=st.pins.indexOf(a.i),open=st.open===a.i;
+    const sr=bat?(a.pr/a.pb*100):(a.pr/a.pb*6),srn=bat?(a.or/a.ob*100):(a.or/a.ob*6);
+    const sp=SEA.map((y,i)=>{const s=R.sea.get(a.i)?.[i];return s&&s[0]>=10?{v:s[1]/s[0]*100,n:s[0],on:st.seasons.has(i)}:{v:null,n:s?s[0]:0,on:st.seasons.has(i)}});
+    const mx=Math.max(20,...sp.map(x=>Math.abs(x.v||0)));
+    return `<div class="item${open?' open':''}${p>=0?' pin':''}" data-i="${a.i}"><div class="tr" data-row="${a.i}">
+      <div class="rk">${a.rank}</div><div class="nm"><b>${a.name}</b><span>${badge(a.team)} ${a.np|0} balls · ${a.app|0} ${bat?'inns':'spells'}</span></div>
+      <div class="db" data-tip="Usual ${fx(a.N)} → pressure ${fx(a.P)} runs/100 balls"><div class="ax"></div><div class="z" style="left:${pos(0)}%"></div><div class="sg" style="left:${pos(Math.min(a.P,a.N))}%;width:${Math.abs(pos(a.P)-pos(a.N))}%;background:${a.P>=a.N?'var(--pos)':'var(--neg)'}"></div><div class="dt u" style="left:${pos(a.N)}%"></div><div class="dt p" style="left:${pos(a.P)}%"></div><div class="vl" style="left:${pos(a.P)}%">${fx(a.P)}</div></div>
+      <div class="num hide" data-tip="Share of pressure innings beating the baseline">${(a.H*100).toFixed(0)}%</div><div class="num hide">${a.np|0}</div><div class="num hide" style="color:${a.delta>=0?'var(--pos)':'var(--neg)'}">${sgn(a.delta)}</div>
+      <button class="pinb" data-pin="${a.i}" aria-pressed="${p>=0}" aria-label="Pin to compare" style="${p>=0?`background:${pc[p]};border-color:${pc[p]}`:''}">${p>=0?p+1:'+'}</button></div>
+      <div class="det"><div><h4>Season pressure rating (raw, runs / 100 balls)</h4><div class="spark">${sp.map((x,i)=>`<div style="opacity:${x.on?1:.35}" data-tip="${SEA[i]}: ${x.v==null?'under 10 pressure balls':fx(x.v)+' over '+x.n+' balls'}"><i style="height:${x.v==null?2:Math.max(3,Math.abs(x.v)/mx*52)}px;background:${x.v==null?'var(--line)':x.v>=0?'var(--pos)':'var(--neg)'}"></i>${SEA[i]%100}</div>`).join('')}</div></div>
+      <div><h4>${bat?'Strike rate':'Economy'}</h4><div class="big">${bat?sr.toFixed(0):sr.toFixed(1)}<small>pressure</small></div><span class="mono" style="color:var(--mute);font-size:11px">usual ${bat?srn.toFixed(0):srn.toFixed(1)}</span></div>
+      <div><h4>${bat?'Dismissed':'Wickets'}</h4><div class="big">${bat?(a.pw/a.pb*100).toFixed(1):(a.pw/a.pb*6).toFixed(2)}<small>${bat?'per 100 balls':'per over'}</small></div><span class="mono" style="color:var(--mute);font-size:11px">usual ${bat?(a.ow/a.ob*100).toFixed(1):(a.ow/a.ob*6).toFixed(2)}</span></div>
+      <div><h4>${bat?'Dot-ball %':'Dot-ball %'}</h4><div class="big">${(a.pd/a.pb*100).toFixed(0)}<small>%</small></div><span class="mono" style="color:var(--mute);font-size:11px">usual ${(a.od/a.ob*100).toFixed(0)}%</span></div></div></div>`}).join('');
+  $('#more').hidden=L.length<=20;$('#more').textContent=st.all?'Show fewer':`Show all ${L.length}`;
+  scatter(all,pc);compare(all,pc);
+}
+function scatter(all,pc){
+  const s=$('#scat');s.innerHTML='';const W=520,H=400,Lm=40,Rm=10,T=10,B=36;
+  const xs=all.flatMap(a=>[a.N,a.P]);const lo=Math.floor(Math.min(...xs)/10)*10-2,hi=Math.ceil(Math.max(...xs)/10)*10+2;
+  const X=v=>Lm+(W-Lm-Rm)*(v-lo)/(hi-lo),Y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  for(let v=Math.ceil(lo/10)*10;v<=hi;v+=10){S('line',{x1:Lm,x2:W-Rm,y1:Y(v),y2:Y(v),stroke:css('--line')},s);S('line',{x1:X(v),x2:X(v),y1:T,y2:H-B,stroke:css('--line')},s);
+    S('text',{x:Lm-6,y:Y(v)+4,'text-anchor':'end','font-size':10,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent=v;S('text',{x:X(v),y:H-B+15,'text-anchor':'middle','font-size':10,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent=v}
+  S('line',{x1:X(lo),y1:Y(lo),x2:X(hi),y2:Y(hi),stroke:css('--acc'),'stroke-width':1.5,'stroke-dasharray':'6 5'},s);
+  S('text',{x:W/2,y:H-4,'text-anchor':'middle','font-size':11,fill:css('--mute')},s).textContent='Usual level';S('text',{x:11,y:H/2,'text-anchor':'middle','font-size':11,fill:css('--mute'),transform:`rotate(-90 11 ${H/2})`},s).textContent='Pressure rating';
+  const q=st.q.toLowerCase();
+  all.forEach(a=>{const pi=st.pins.indexOf(a.i),hl=pi>=0||(q&&a.name.toLowerCase().includes(q))||st.open===a.i,dim=(st.team>=0&&a.team!==st.team);
+    const c=S('circle',{cx:X(a.N),cy:Y(a.P),r:3.5+Math.sqrt(a.np)/6,fill:TCOL[a.team],'fill-opacity':dim?.12:hl?1:.7,stroke:hl?css('--fg'):css('--bg'),'stroke-width':hl?2.2:1,style:'cursor:pointer','data-tip':`<b>${a.name}</b> (${TC[a.team]})<br>rank ${a.rank} · usual ${fx(a.N)} → pressure ${fx(a.P)}`},s);
+    c.addEventListener('click',()=>{pin(a.i)});c.addEventListener('pointerenter',()=>{$('#scrd').innerHTML=`<span><b>${a.name}</b></span><span>rank <b>${a.rank}</b></span><span>${a.np|0} pressure balls</span>`});
+    if(a.rank<=5||pi>=0||(q&&hl))S('text',{x:X(a.N)+8,y:Y(a.P)+4,'font-size':10.5,'font-weight':600,fill:css('--fg'),'pointer-events':'none'},s).textContent=a.name.split(' ').slice(-1)[0]});
+}
+function compare(all,pc){
+  const P=st.pins.map(i=>all.find(a=>a.i===i)).filter(Boolean);
+  if(P.length<1){$('#cmp').innerHTML='<div class="sub" style="margin:0">Pin players with the + button, up to three. Pins are kept when you switch filters.</div>';return}
+  const bat=st.mode==='bat';
+  const M=[['Pressure rating',a=>a.P],['Usual level',a=>a.N],['Hit rate %',a=>a.H*100],['Pressure balls',a=>a.np],[bat?'Strike rate (pressure)':'Economy (pressure)',a=>bat?a.pr/a.pb*100:a.pr/a.pb*6],[bat?'Dismissed /100':'Wickets /over',a=>bat?a.pw/a.pb*100:a.pw/a.pb*6]];
+  $('#cmp').innerHTML=`<div class="leg">${P.map((a,i)=>`<button data-unpin="${a.i}" data-tip="Click to unpin"><b style="background:${pc[st.pins.indexOf(a.i)]}"></b>${a.name} ✕</button>`).join('')}</div>`+
+    M.map(m=>{const v=P.map(m[1]);const mx=Math.max(...v.map(Math.abs),1e-6);return `<div class="crow"><span>${m[0]}</span><div class="bars">${P.map((a,i)=>`<div><i style="width:${Math.abs(v[i])/mx*100*.8+2}%;background:${pc[st.pins.indexOf(a.i)]};opacity:${v[i]<0?.45:1}"></i><span>${v[i]<0?'−':''}${Math.abs(v[i]).toFixed(m[0].includes('Economy')||m[0].includes('/over')||m[0].includes('/100')?2:1)}</span></div>`).join('')}</div></div>`}).join('');
+}
+function pin(i){const k=st.pins.indexOf(i);if(k>=0)st.pins.splice(k,1);else{if(st.pins.length>=3)st.pins.shift();st.pins.push(i)}renderPlayers()}
+function initPlayers(){
+  $('#mode').onclick=e=>{const b=e.target.closest('button');if(!b)return;st.mode=b.dataset.m;st.pins=[];st.open=null;st.all=false;renderPlayers()};
+  $('#q').oninput=e=>{st.q=e.target.value;renderPlayers()};
+  $('#minb').oninput=e=>{st.minb=+e.target.value;$('#minbv').textContent=st.minb;renderPlayers()};
+  $('#reset').onclick=()=>{st.seasons=new Set([0,1,2,3,4]);st.team=-1;st.minb=80;st.q='';$('#q').value='';$('#minb').value=80;$('#minbv').textContent=80;st.sort='rank';st.dir=1;renderAll()};
+  $('#more').onclick=()=>{st.all=!st.all;renderPlayers()};
+  $('.th').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;const k=b.dataset.s;if(st.sort===k)st.dir*=-1;else{st.sort=k;st.dir=(k==='name'||k==='rank')?1:-1}renderPlayers()};
+  $('#tbl').onclick=e=>{const pb=e.target.closest('[data-pin]');if(pb){pin(+pb.dataset.pin);return}const r=e.target.closest('[data-row]');if(r){const i=+r.dataset.row;st.open=st.open===i?null:i;renderPlayers()}};
+  $('#cmp').onclick=e=>{const b=e.target.closest('[data-unpin]');if(b)pin(+b.dataset.unpin)};
+}
+/* ---------- teams ---------- */
+function teamAgg(){
+  const T=DATA.teams.map(()=>({m:0,w:0,cm:0,cw:0,lm:0,lw:0,bn:0,bs:0,wn:0,ws:0}));
+  const SS=DATA.teams.map(()=>SEA.map(()=>null));
+  for(const r of DATA.teamrows){const [t,s,m,w,cm,cw,lm,lw,bn,bs,,,wn,ws]=r;const o={m,w,cm,cw,lm,lw,bn,bs,wn,ws};SS[t][s]=o;if(!st.seasons.has(s))continue;const a=T[t];for(const k in o)a[k]+=o[k]}
+  T.forEach((a,i)=>{a.i=i;a.bat=a.bn?a.bs/a.bn*100:0;a.bowl=a.wn?a.ws/a.wn*100:0;a.net=a.bat+a.bowl;a.win=a.m?a.w/a.m*100:0;a.live=a.lm?a.lw/a.lm*100:null;a.cwp=a.cm?a.cw/a.cm*100:0});
+  return {T,SS}}
+function renderTeams(){
+  const {T,SS}=teamAgg();const k=st.tsort,rows=T.slice().sort((a,b)=>st.tdir*((b[k]??-1e9)-(a[k]??-1e9))*-1*-1);
+  rows.sort((a,b)=>st.tdir<0?(b[k]??-1e9)-(a[k]??-1e9):(a[k]??-1e9)-(b[k]??-1e9));
+  const cols=[['net','Net'],['bat','Bat'],['bowl','Bowl'],['win','Win %'],['cwp','Chase %'],['live','Close %'],['m','M']];
+  $('#ttab').innerHTML=`<thead><tr><th>Team</th>${cols.map(c=>`<th data-ts="${c[0]}" data-on="${c[0]===k?1:0}">${c[1]}</th>`).join('')}</tr></thead><tbody>${rows.map(a=>`<tr data-t="${a.i}" class="${st.tsel===a.i?'sel':''}"><td>${badge(a.i)}</td>${cols.map(c=>{const v=a[c[0]];const col=['net','bat','bowl'].includes(c[0])?(v>=0?'var(--pos)':'var(--neg)'):'inherit';return `<td class="mono" style="color:${col}">${v==null?'–':['net','bat','bowl'].includes(c[0])?sgn(v):c[0]==='m'?v:v.toFixed(0)}</td>`}).join('')}</tr>`).join('')}</tbody>`;
+  // scatter
+  const s=$('#tscat');s.innerHTML='';const W=440,H=360,Lm=40,Rm=14,Tm=10,B=34;const xs=T.map(a=>a.bat),ys=T.map(a=>a.bowl);
+  const ext=v=>Math.ceil(Math.max(...v.map(Math.abs))/10)*10+5;const ex=ext(xs),ey=ext(ys);
+  const X=v=>Lm+(W-Lm-Rm)*(v+ex)/(2*ex),Y=v=>Tm+(H-Tm-B)*(1-(v+ey)/(2*ey));
+  S('line',{x1:X(0),x2:X(0),y1:Tm,y2:H-B,stroke:css('--mute'),'stroke-dasharray':'4 4'},s);S('line',{x1:Lm,x2:W-Rm,y1:Y(0),y2:Y(0),stroke:css('--mute'),'stroke-dasharray':'4 4'},s);
+  S('text',{x:W-Rm,y:Tm+12,'text-anchor':'end','font-size':10.5,fill:css('--pos'),'font-weight':600},s).textContent='Strong both ways';S('text',{x:Lm+4,y:H-B-6,'font-size':10.5,fill:css('--neg'),'font-weight':600},s).textContent='Weak both ways';
+  S('text',{x:W/2,y:H-6,'text-anchor':'middle','font-size':11,fill:css('--mute')},s).textContent='Batting under pressure';S('text',{x:11,y:H/2,'text-anchor':'middle','font-size':11,fill:css('--mute'),transform:`rotate(-90 11 ${H/2})`},s).textContent='Bowling under pressure';
+  T.forEach(a=>{const g=S('g',{style:'cursor:pointer','data-tip':`<b>${DATA.teams[a.i].n}</b><br>Bat ${sgn(a.bat)} · Bowl ${sgn(a.bowl)} per 100 balls`},s);
+    S('circle',{cx:X(a.bat),cy:Y(a.bowl),r:st.tsel===a.i?17:13,fill:TCOL[a.i],stroke:st.tsel===a.i?css('--fg'):css('--bg'),'stroke-width':2},g);S('text',{x:X(a.bat),y:Y(a.bowl)+3.5,'text-anchor':'middle','font-size':8.5,'font-weight':800,fill:'#0b1020','pointer-events':'none'},g).textContent=TC[a.i];
+    g.addEventListener('click',()=>{st.tsel=a.i;renderTeams()})});
+  // season grid
+  const met=st.tmet;$$('#tm button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.t===met));
+  const val=(o)=>{if(!o||!o.m)return null;if(met==='bat')return o.bn?o.bs/o.bn*100:null;if(met==='bowl')return o.wn?o.ws/o.wn*100:null;if(met==='live')return o.lm?o.lw/o.lm*100:null;return o.bn&&o.wn?o.bs/o.bn*100+o.ws/o.wn*100:null};
+  const all=SS.flat().map(val).filter(v=>v!=null);const mx=Math.max(...all.map(v=>Math.abs(met==='live'?v-50:v)),1);
+  const col=v=>{if(v==null)return 'var(--panel2)';const d=(met==='live'?v-50:v)/mx;return `color-mix(in srgb, ${d>=0?'var(--pos)':'var(--neg)'} ${Math.round(Math.abs(d)*75)+8}%, var(--panel2))`};
+  $('#tsq').innerHTML=`<span></span>${SEA.map(y=>`<span class="mono" style="text-align:center;color:var(--mute);font-size:11px">${y}</span>`).join('')}`+DATA.teams.map((t,i)=>`<div class="l">${badge(i)}</div>`+SEA.map((y,s)=>{const v=val(SS[i][s]);return `<div class="c" style="background:${col(v)};${st.seasons.has(s)?'':'opacity:.4'}" data-tip="${t.n} ${y}: ${v==null?'no data':met==='live'?v.toFixed(0)+'% of close chases won ('+SS[i][s].lw+' of '+SS[i][s].lm+')':sgn(v)+' runs/100 pressure balls'}">${v==null?'–':met==='live'?v.toFixed(0):sgn(v,0)}</div>`}).join('')).join('');
+  // detail
+  const sel=st.tsel>=0?T[st.tsel]:null;
+  if(!sel){$('#tdet').innerHTML='<h3>Team detail</h3><div class="sub">Click a team in the table or on the chart.</div>';}
+  else{const tops=m=>rate(m).list.filter(a=>a.team===sel.i).slice(0,3);
+    $('#tdet').innerHTML=`<h3>${DATA.teams[sel.i].n}</h3><div class="sub">${sel.m} matches in view · ${sel.w} wins · chase wins ${sel.cw} of ${sel.cm}${sel.lm?` · close chases and defences won ${sel.lw} of ${sel.lm}`:''}</div>
+    <div class="grid g2" style="gap:12px"><div><div class="eyebrow">Batters</div>${tops('bat').map(a=>`<div style="margin:8px 0"><button class="chip" data-open="bat:${a.i}">#${a.rank} ${a.name}</button> <span class="mono" style="color:var(--pos)">${sgn(a.P)}</span></div>`).join('')||'<div class="sub">No eligible batters.</div>'}</div>
+    <div><div class="eyebrow">Bowlers</div>${tops('bowl').map(a=>`<div style="margin:8px 0"><button class="chip" data-open="bowl:${a.i}">#${a.rank} ${a.name}</button> <span class="mono" style="color:var(--pos)">${sgn(a.P)}</span></div>`).join('')||'<div class="sub">No eligible bowlers.</div>'}</div></div>
+    <div class="rd" style="margin-top:12px"><span>Batting <b>${sgn(sel.bat)}</b></span><span>Bowling <b>${sgn(sel.bowl)}</b></span><span>Net <b>${sgn(sel.net)}</b></span></div>`}
+}
+function initTeams(){
+  $('#ttab').onclick=e=>{const th=e.target.closest('[data-ts]');if(th){if(st.tsort===th.dataset.ts)st.tdir*=-1;else{st.tsort=th.dataset.ts;st.tdir=-1}renderTeams();return}const tr=e.target.closest('[data-t]');if(tr){st.tsel=+tr.dataset.t;renderTeams()}};
+  $('#tm').onclick=e=>{const b=e.target.closest('button');if(b){st.tmet=b.dataset.t;renderTeams()}};
+}
+/* ---------- situations ---------- */
+function renderSituations(){
+  $$('#hinn button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.i===st.hinn));$$('#hmet button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===st.hmet));
+  const idx={li:3,rpo:4,wk:5}[st.hmet],data=DATA.heat[st.hinn],map={};let mx=0;
+  data.forEach(r=>{if(r[2]>=30){map[r[0]+'_'+r[1]]=r;mx=Math.max(mx,r[idx])}});
+  let h='<div></div>'+Array.from({length:20},(_,i)=>`<div class="l">${i+1}</div>`).join('');
+  for(let w=0;w<=9;w++){h+=`<div class="l">${w}${w===9?'+':''} wkts</div>`;for(let o=1;o<=20;o++){const r=map[o+'_'+w];
+    h+=r?`<div class="c" style="background:color-mix(in srgb, var(--acc) ${Math.round(r[idx]/mx*92)+5}%, var(--panel2))" data-hov="${o}_${w}" data-tip="Over ${o}, ${w} down<br>${r[2]} balls · leverage ${r[3]}× · ${r[4]} runs/over · ${r[5]}% wickets"></div>`:`<div class="c" style="background:var(--panel2);opacity:.35"></div>`}}
+  const hp=$('#heat');hp.style.gridTemplateColumns='62px repeat(20,1fr)';hp.innerHTML=h;
+  $('#phase').innerHTML=`<thead><tr><th>Phase</th><th>Pressure share</th><th>Leverage</th><th>Runs/over (P / O)</th><th>Wkt % (P / O)</th></tr></thead><tbody>${DATA.phase.map(p=>`<tr><td>${p.inn===1?'1st':'Chase'} · ${p.ph}</td><td class="mono">${p.sh.toFixed(0)}%</td><td class="mono">${p.li.toFixed(2)}×</td><td class="mono">${p.rp==null?'–':p.rp.toFixed(1)} / ${p.ro.toFixed(1)}</td><td class="mono">${p.wp==null?'–':p.wp.toFixed(1)} / ${p.wo.toFixed(1)}</td></tr>`).join('')}</tbody>`;
+  // gap chart
+  const s=$('#gap');s.innerHTML='';const W=440,H=240,Lm=36,Rm=10,T=14,B=28;const g=DATA.season.map(x=>x.rp-x.ro);const mxv=Math.max(...g)*1.25;
+  const bw=(W-Lm-Rm)/5;S('line',{x1:Lm,x2:W-Rm,y1:H-B,y2:H-B,stroke:css('--line')},s);
+  g.forEach((v,i)=>{const h=v/mxv*(H-T-B);S('rect',{x:Lm+i*bw+10,y:H-B-h,width:bw-20,height:h,rx:4,fill:css('--acc'),opacity:st.seasons.has(i)?1:.35,'data-tip':`${SEA[i]}: pressure balls ${DATA.season[i].rp} runs/over vs ${DATA.season[i].ro} on ordinary balls`},s);
+    S('text',{x:Lm+i*bw+bw/2,y:H-B-h-6,'text-anchor':'middle','font-size':11,'font-weight':600,fill:css('--fg')},s).textContent='+'+v.toFixed(2);S('text',{x:Lm+i*bw+bw/2,y:H-8,'text-anchor':'middle','font-size':10.5,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent=SEA[i]});
+  $('#swings').innerHTML=`<thead><tr><th>Match</th><th>Ball</th><th>Batter v bowler</th><th>Event</th><th>Swing</th></tr></thead><tbody>${DATA.swings.map(x=>`<tr><td>${x.lab} · ${SEA[x.season]}</td><td class="mono">${x.ball}</td><td>${x.bat} v ${x.bowl}</td><td>${x.ev}</td><td class="mono" style="color:${x.d>=0?'var(--pos)':'var(--neg)'}">${sgn(x.d,0)}% ${x.chaser}</td></tr>`).join('')}</tbody>`;
+}
+function initSituations(){
+  $('#hinn').onclick=e=>{const b=e.target.closest('button');if(b){st.hinn=+b.dataset.i;renderSituations()}};
+  $('#hmet').onclick=e=>{const b=e.target.closest('button');if(b){st.hmet=b.dataset.k;renderSituations()}};
+  $('#heat').addEventListener('pointerover',e=>{const c=e.target.closest('[data-hov]');if(!c)return;const [o,w]=c.dataset.hov.split('_');const r=DATA.heat[st.hinn].find(x=>x[0]==o&&x[1]==w);
+    $('#hrd').innerHTML=`<span>Over <b>${o}</b></span><span><b>${w}</b> wickets down</span><span>${r[2]} balls</span><span>Leverage <b>${r[3]}×</b></span><span><b>${r[4]}</b> runs/over</span><span><b>${r[5]}%</b> wickets</span>`});
+}
+/* ---------- match explorer ---------- */
+function renderMatchList(){
+  $('#mlist').innerHTML=DATA.matches.map((m,i)=>`<button class="mc" data-m="${i}" aria-pressed="${i===st.match}" style="${st.seasons.has(m.season)?'':'opacity:.45'}"><b>${m.lab}</b><small>${m.date} · ${m.stage}</small><small>${m.res}</small></button>`).join('')}
+function renderMatch(){
+  const m=DATA.matches[st.match],n=m.wp.length;renderMatchList();
+  $('#mtitle').textContent=`${m.lab} · ${SEA[m.season]}`;$('#msub').textContent=`${m.chaser} chasing ${m.target} · ${m.res} · ${m.stage}`;
+  const s=$('#wp');s.innerHTML='';const W=760,H=330,L=40,R=12,T=14,B=84,PH=H-T-B;const X=i=>L+(W-L-R)*i/(n-1),Y=v=>T+PH*(1-v/100);
+  for(const v of [0,25,50,75,100]){S('line',{x1:L,x2:W-R,y1:Y(v),y2:Y(v),stroke:css('--line'),'stroke-dasharray':v===50?'5 4':''},s);S('text',{x:L-6,y:Y(v)+4,'text-anchor':'end','font-size':10,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent=v+'%'}
+  for(let o=0;o<=20;o+=4){const i=Math.min(n-1,Math.round(o*6*(n-1)/120));S('text',{x:X(i),y:T+PH+14,'text-anchor':'middle','font-size':10,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent='Ov '+o}
+  const df=S('defs',{},s);const g=S('linearGradient',{id:'wg',x1:0,y1:0,x2:0,y2:1},df);S('stop',{offset:0,'stop-color':css('--pos'),'stop-opacity':.45},g);S('stop',{offset:.5,'stop-color':css('--pos'),'stop-opacity':0},g);S('stop',{offset:.5,'stop-color':css('--neg'),'stop-opacity':0},g);S('stop',{offset:1,'stop-color':css('--neg'),'stop-opacity':.45},g);
+  S('path',{d:'M'+m.wp.map((v,i)=>X(i)+','+Y(v)).join('L')+`L${X(n-1)},${Y(50)}L${X(0)},${Y(50)}Z`,fill:'url(#wg)'},s);
+  S('path',{d:'M'+m.wp.map((v,i)=>X(i)+','+Y(v)).join('L'),fill:'none',stroke:css('--fg'),'stroke-width':2.4,'stroke-linejoin':'round'},s);
+  const mxl=Math.max(...m.li);const lb=T+PH+26,lh=B-34;
+  S('text',{x:L-6,y:lb+lh/2+3,'text-anchor':'end','font-size':9.5,fill:css('--mute'),'font-family':'JetBrains Mono'},s).textContent='LI';
+  m.li.forEach((v,i)=>S('rect',{x:X(i)-1.5,y:lb+lh-v/mxl*lh,width:3,height:v/mxl*lh,fill:css('--acc'),opacity:.8},s));
+  m.sw.forEach((w,k)=>{const c=S('g',{style:'cursor:pointer','data-tip':`${w.ball} ${w.bat} v ${w.bowl}: ${w.ev}, ${sgn(w.d,0)}%`},s);S('circle',{cx:X(w.idx),cy:Y(m.wp[w.idx]),r:9,fill:css('--acc'),stroke:css('--bg'),'stroke-width':2},c);S('text',{x:X(w.idx),y:Y(m.wp[w.idx])+3.5,'text-anchor':'middle','font-size':10,'font-weight':800,fill:'#10141f','pointer-events':'none'},c).textContent=k+1;c.addEventListener('click',()=>{stop();st.idx=w.idx;cursor()})});
+  const cur=S('line',{y1:T,y2:T+PH+26+lh,stroke:css('--mute'),'stroke-width':1.5},s),dot=S('circle',{r:5.5,fill:css('--fg'),stroke:css('--bg'),'stroke-width':2},s);
+  const hit=S('rect',{x:L,y:T,width:W-L-R,height:H-T,fill:'transparent',style:'cursor:crosshair'},s);
+  s._c={cur,dot,X,Y};
+  hit.addEventListener('pointermove',e=>{if(e.buttons===0&&e.pointerType==='mouse'&&!st.drag){} const r=s.getBoundingClientRect();stop();st.idx=Math.max(0,Math.min(n-1,Math.round(((e.clientX-r.left)/r.width*W-L)/(W-L-R)*(n-1))));cursor()});
+  $('#msw').innerHTML=m.sw.map((w,k)=>`<button data-j="${w.idx}"><i>${k+1}</i><span><b>${w.ball}</b> ${w.bat} v ${w.bowl} · ${w.ev}</span><span class="mono" style="color:${w.d>=0?'var(--pos)':'var(--neg)'}">${sgn(w.d,0)}%</span></button>`).join('');
+  st.idx=Math.min(st.idx,n-1);cursor();
+}
+function cursor(){
+  const m=DATA.matches[st.match],s=$('#wp'),c=s._c;if(!c)return;const i=st.idx;
+  c.cur.setAttribute('x1',c.X(i));c.cur.setAttribute('x2',c.X(i));c.dot.setAttribute('cx',c.X(i));c.dot.setAttribute('cy',c.Y(m.wp[i]));
+  const need=m.target-m.runs[i];
+  $('#mrd').innerHTML=`<span>Over <b>${m.ov[i]}</b></span><span>${m.chaser} <b>${m.runs[i]}/${m.wk[i]}</b></span><span>need <b>${Math.max(need,0)}</b></span><span>win prob <b style="color:${m.wp[i]>=50?'var(--pos)':'var(--neg)'}">${m.wp[i]}%</b></span><span>leverage <b>${m.li[i].toFixed(1)}×</b></span>`;
+}
+function stop(){if(st.timer){clearInterval(st.timer);st.timer=null;$('#play').textContent='Replay'}}
+function initMatches(){
+  $('#mlist').onclick=e=>{const b=e.target.closest('.mc');if(b){stop();st.match=+b.dataset.m;st.idx=0;renderMatch()}};
+  $('#msw').onclick=e=>{const b=e.target.closest('[data-j]');if(b){stop();st.idx=+b.dataset.j;cursor()}};
+  $('#play').onclick=()=>{if(st.timer){stop();return}const n=DATA.matches[st.match].wp.length;if(st.idx>=n-1)st.idx=0;$('#play').textContent='Pause';st.timer=setInterval(()=>{st.idx++;cursor();if(st.idx>=n-1)stop()},90)};
+}
+/* ---------- orchestrate ---------- */
+function renderAll(){
+  $$('#fSeason .chip').forEach(b=>b.setAttribute('aria-pressed',st.seasons.has(+b.dataset.s)));$('#fTeam').value=st.team;
+  ({overview:renderOverview,players:renderPlayers,teams:renderTeams,situations:renderSituations,matches:renderMatch})[st.view]();
+}
+initHeader();initPlayers();initTeams();initSituations();initMatches();
+const h=location.hash.slice(1);go(['overview','players','teams','situations','matches'].includes(h)?h:'overview');
+},err=>{document.body.insertAdjacentHTML('afterbegin','<p style="padding:24px">Could not load the page data. Reload to try again.</p>');console.error(err)});
+</script>
+
+</body></html>
